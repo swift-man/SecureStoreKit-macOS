@@ -72,3 +72,8 @@ swift test
 ```
 
 일반 `swift test` 프로세스에는 앱의 provisioning profile과 Keychain entitlement가 없을 수 있으므로 실제 Data Protection Keychain 통합 검증은 서명된 macOS 호스트 앱에서 별도로 실행해야 합니다. 패키지 단위 테스트는 Security.framework 경계를 대체하여 Secret을 실제 Keychain에 저장하지 않습니다.
+
+## 관련 문서
+
+- [보안 정책](SECURITY.md)
+- [저장소 작업 규칙](AGENTS.md)
