@@ -41,7 +41,7 @@ public enum SecureStoreAccessibility: String, CaseIterable, Sendable {
 
 /// Immutable namespace and storage policy supplied by the host app.
 public struct SecureStoreConfiguration: Equatable, Sendable {
-  public static let defaultMaximumValueSize = 1_048_576
+  public static let defaultMaximumValueSize = 65_536
 
   public let service: String
   public let accessGroup: String?

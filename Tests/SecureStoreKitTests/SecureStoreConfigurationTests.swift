@@ -27,6 +27,7 @@ struct SecureStoreConfigurationTests {
     #expect(defaults.accessGroup == nil)
     #expect(defaults.accessibility == .whenUnlocked)
     #expect(defaults.synchronizesWithICloud == false)
+    #expect(SecureStoreConfiguration.defaultMaximumValueSize == 65_536)
     #expect(defaults.maximumValueSize == SecureStoreConfiguration.defaultMaximumValueSize)
     #expect(synchronized.accessGroup == "TEAMID.com.example.app")
     #expect(synchronized.synchronizesWithICloud)

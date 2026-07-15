@@ -129,9 +129,9 @@ struct DataProtectionSecureStoreTests {
     client.copyResult = SecurityItemCopyResult(status: errSecItemNotFound, value: nil)
     #expect(try await store.keys().isEmpty)
 
-    let attributes: [[CFString: Any]] = [
-      [kSecAttrAccount: "z-key"],
-      [kSecAttrAccount: "a-key"],
+    let attributes: [[String: Any]] = [
+      [kSecAttrAccount as String: "z-key"],
+      [kSecAttrAccount as String: "a-key"],
     ]
     client.copyResult = SecurityItemCopyResult(
       status: errSecSuccess,
@@ -139,7 +139,7 @@ struct DataProtectionSecureStoreTests {
     )
     #expect(try await store.keys().map(\.value) == ["a-key", "z-key"])
 
-    let singleAttribute: [CFString: Any] = [kSecAttrAccount: "single-key"]
+    let singleAttribute: [String: Any] = [kSecAttrAccount as String: "single-key"]
     client.copyResult = SecurityItemCopyResult(
       status: errSecSuccess,
       value: singleAttribute as CFDictionary
@@ -160,7 +160,7 @@ struct DataProtectionSecureStoreTests {
       try await store.keys()
     }
 
-    let missingAccount: [CFString: Any] = [kSecAttrLabel: "label"]
+    let missingAccount: [String: Any] = [kSecAttrLabel as String: "label"]
     client.copyResult = SecurityItemCopyResult(
       status: errSecSuccess,
       value: missingAccount as CFDictionary
@@ -169,7 +169,7 @@ struct DataProtectionSecureStoreTests {
       try await store.keys()
     }
 
-    let invalidAccount: [CFString: Any] = [kSecAttrAccount: "invalid\0key"]
+    let invalidAccount: [String: Any] = [kSecAttrAccount as String: "invalid\0key"]
     client.copyResult = SecurityItemCopyResult(
       status: errSecSuccess,
       value: invalidAccount as CFDictionary

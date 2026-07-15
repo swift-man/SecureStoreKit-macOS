@@ -11,7 +11,7 @@ import LocalAuthentication
 import Security
 
 /// Builds only Data Protection Keychain queries from validated configuration.
-struct SecItemQueryBuilder {
+struct SecItemQueryBuilder: Sendable {
   let configuration: SecureStoreConfiguration
 
   func addQuery(data: Data, key: SecureStoreKey) -> [CFString: Any] {

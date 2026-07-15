@@ -9,6 +9,8 @@
 - 앱 코드와 테스트 대역이 같은 계약을 사용하도록 `SecureStore` 프로토콜과 `SecureStoreTesting` 제품을 추가했습니다.
 - Keychain 쿼리, 오류 변환, CRUD 동작과 보안 기본값을 검증하는 단위 테스트를 추가했습니다.
 - Keychain Sharing entitlement, 레거시 항목 마이그레이션, 보안 정책을 설명하는 문서를 추가했습니다.
+- Security.framework의 동기 호출을 전용 직렬 큐에서 실행해 Swift cooperative executor 차단을 방지했습니다.
+- Keychain에 지나치게 큰 값을 저장하지 않도록 기본 저장 한도를 64 KiB로 조정했습니다.
 
 ## 0.0.0.0 - 2026-07-15
 

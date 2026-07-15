@@ -53,6 +53,10 @@ try await store.delete(for: "github.token")
 
 Secret 실제 값은 오류, 로그, `description`에 포함하지 않습니다.
 
+기본 저장 한도는 64 KiB입니다. 더 큰 암호화 데이터는 파일로 저장하고, 해당 파일을
+보호하는 작은 암호화 키만 Keychain에 저장하는 방식을 권장합니다. 필요한 경우
+`maximumValueSize`를 명시적으로 조정할 수 있습니다.
+
 ## 기존 Keychain 마이그레이션
 
 레거시 Keychain 읽기와 계정 매핑은 사용하는 앱의 책임입니다. 패키지는 KeychainAccess에 의존하지 않습니다.
