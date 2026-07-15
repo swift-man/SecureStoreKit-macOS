@@ -13,6 +13,8 @@ import Security
 public actor DataProtectionSecureStore: SecureStore {
   public let configuration: SecureStoreConfiguration
 
+  private static let maximumUpsertAttempts = 3
+
   private let queryBuilder: SecItemQueryBuilder
   private let security: any SecurityItemClient
   private let operationQueue: SecurityOperationQueue
@@ -40,21 +42,7 @@ public actor DataProtectionSecureStore: SecureStore {
     let security = security
     let queryBuilder = queryBuilder
     try await operationQueue.run {
-      let addStatus = security.add(queryBuilder.addQuery(data: data, key: key))
-      switch addStatus {
-      case errSecSuccess:
-        return
-      case errSecDuplicateItem:
-        let updateStatus = security.update(
-          queryBuilder.updateQuery(key: key),
-          attributes: queryBuilder.updateAttributes(data: data)
-        )
-        guard updateStatus == errSecSuccess else {
-          throw SecureStoreError.from(status: updateStatus)
-        }
-      default:
-        throw SecureStoreError.from(status: addStatus)
-      }
+      try Self.upsert(data, for: key, queryBuilder: queryBuilder, security: security)
     }
   }
 
@@ -116,5 +104,37 @@ public actor DataProtectionSecureStore: SecureStore {
         throw SecureStoreError.from(status: result.status)
       }
     }
+  }
+
+  private static func upsert(
+    _ data: Data,
+    for key: SecureStoreKey,
+    queryBuilder: SecItemQueryBuilder,
+    security: any SecurityItemClient
+  ) throws {
+    for attempt in 1...maximumUpsertAttempts {
+      let addStatus = security.add(queryBuilder.addQuery(data: data, key: key))
+      switch addStatus {
+      case errSecSuccess:
+        return
+      case errSecDuplicateItem:
+        let updateStatus = security.update(
+          queryBuilder.updateQuery(key: key),
+          attributes: queryBuilder.updateAttributes(data: data)
+        )
+        switch updateStatus {
+        case errSecSuccess:
+          return
+        case errSecItemNotFound where attempt < maximumUpsertAttempts:
+          continue
+        default:
+          throw SecureStoreError.from(status: updateStatus)
+        }
+      default:
+        throw SecureStoreError.from(status: addStatus)
+      }
+    }
+
+    throw SecureStoreError.unexpectedStatus(errSecItemNotFound)
   }
 }

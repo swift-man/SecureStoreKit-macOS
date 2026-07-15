@@ -52,6 +52,34 @@ struct DataProtectionSecureStoreTests {
     #expect(client.lastUpdateAttributes?[kSecValueData] as? Data == data)
   }
 
+  @Test("save retries when a concurrent delete removes an item before update")
+  func saveRetriesAfterConcurrentDelete() async throws {
+    let client = StubSecurityItemClient()
+    client.addStatuses = [errSecDuplicateItem, errSecSuccess]
+    client.updateStatus = errSecItemNotFound
+    let store = try makeStore(client: client)
+
+    try await store.save(Data("secret".utf8), for: "token")
+
+    #expect(client.addCallCount == 2)
+    #expect(client.updateCallCount == 1)
+  }
+
+  @Test("save bounds retries when concurrent changes continue")
+  func saveBoundsConcurrentChangeRetries() async throws {
+    let client = StubSecurityItemClient()
+    client.addStatus = errSecDuplicateItem
+    client.updateStatus = errSecItemNotFound
+    let store = try makeStore(client: client)
+
+    await #expect(throws: SecureStoreError.unexpectedStatus(errSecItemNotFound)) {
+      try await store.save(Data("secret".utf8), for: "token")
+    }
+
+    #expect(client.addCallCount == 3)
+    #expect(client.updateCallCount == 3)
+  }
+
   @Test("save maps add and update failures")
   func saveFailures() async throws {
     let addClient = StubSecurityItemClient()
@@ -61,6 +89,8 @@ struct DataProtectionSecureStoreTests {
     await #expect(throws: SecureStoreError.missingEntitlement) {
       try await addStore.save(Data("secret".utf8), for: "token")
     }
+    #expect(addClient.addCallCount == 1)
+    #expect(addClient.updateCallCount == 0)
 
     let updateClient = StubSecurityItemClient()
     updateClient.addStatus = errSecDuplicateItem
@@ -70,6 +100,8 @@ struct DataProtectionSecureStoreTests {
     await #expect(throws: SecureStoreError.authenticationFailed) {
       try await updateStore.save(Data("secret".utf8), for: "token")
     }
+    #expect(updateClient.addCallCount == 1)
+    #expect(updateClient.updateCallCount == 1)
   }
 
   @Test("read returns data and preserves missing-item semantics")
