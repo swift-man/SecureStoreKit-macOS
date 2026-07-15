@@ -11,7 +11,7 @@ import SecureStoreKit
 
 /// Deterministic SecureStore replacement for previews and unit tests.
 public actor InMemorySecureStore: SecureStore {
-  private var storage: [SecureStoreKey: Data]
+  private var storage: [SecureStoreKey: SecureBytes]
   private let maximumValueSize: Int
 
   public init() {
@@ -26,7 +26,7 @@ public actor InMemorySecureStore: SecureStore {
     guard initialValues.values.allSatisfy({ $0.count <= maximumValueSize }) else {
       throw SecureStoreError.valueTooLarge(maximumBytes: maximumValueSize)
     }
-    storage = initialValues
+    storage = initialValues.mapValues { SecureBytes(copying: $0) }
     self.maximumValueSize = maximumValueSize
   }
 
@@ -34,11 +34,22 @@ public actor InMemorySecureStore: SecureStore {
     guard data.count <= maximumValueSize else {
       throw SecureStoreError.valueTooLarge(maximumBytes: maximumValueSize)
     }
-    storage[key] = data
+    storage[key] = SecureBytes(copying: data)
+  }
+
+  public func save(_ bytes: SecureBytes, for key: SecureStoreKey) async throws {
+    guard bytes.count <= maximumValueSize else {
+      throw SecureStoreError.valueTooLarge(maximumBytes: maximumValueSize)
+    }
+    storage[key] = SecureBytes(copying: bytes)
   }
 
   public func read(for key: SecureStoreKey) async throws -> Data? {
-    storage[key]
+    storage[key]?.withUnsafeBytes { Data($0) }
+  }
+
+  public func readSecureBytes(for key: SecureStoreKey) async throws -> SecureBytes? {
+    storage[key].map { SecureBytes(copying: $0) }
   }
 
   public func delete(for key: SecureStoreKey) async throws {

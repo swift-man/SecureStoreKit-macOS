@@ -24,7 +24,7 @@ struct SecItemQueryBuilderTests {
     let builder = SecItemQueryBuilder(configuration: configuration)
     let key = try SecureStoreKey("token")
     let queries = [
-      builder.addQuery(data: Data("value".utf8), key: key),
+      builder.addQuery(data: Data("value".utf8) as NSData, key: key),
       builder.readQuery(key: key),
       builder.updateQuery(key: key),
       builder.deleteQuery(key: key),
@@ -50,10 +50,10 @@ struct SecItemQueryBuilderTests {
     let key = try SecureStoreKey("token")
     let data = Data("secret".utf8)
 
-    let add = builder.addQuery(data: data, key: key)
+    let add = builder.addQuery(data: data as NSData, key: key)
     let read = builder.readQuery(key: key)
     let update = builder.updateQuery(key: key)
-    let attributes = builder.updateAttributes(data: data)
+    let attributes = builder.updateAttributes(data: data as NSData)
     let keys = builder.keysQuery()
 
     #expect(add[kSecValueData] as? Data == data)

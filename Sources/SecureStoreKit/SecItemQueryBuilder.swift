@@ -14,7 +14,7 @@ import Security
 struct SecItemQueryBuilder: Sendable {
   let configuration: SecureStoreConfiguration
 
-  func addQuery(data: Data, key: SecureStoreKey) -> [CFString: Any] {
+  func addQuery(data: NSData, key: SecureStoreKey) -> [CFString: Any] {
     var query = identityQuery(key: key)
     query[kSecValueData] = data
     query[kSecAttrAccessible] = configuration.accessibility.securityValue
@@ -32,7 +32,7 @@ struct SecItemQueryBuilder: Sendable {
     identityQuery(key: key)
   }
 
-  func updateAttributes(data: Data) -> [CFString: Any] {
+  func updateAttributes(data: NSData) -> [CFString: Any] {
     [
       kSecValueData: data,
       kSecAttrAccessible: configuration.accessibility.securityValue,
