@@ -28,7 +28,9 @@ struct SecurityOperationQueueTests {
       try await queue.run {
         events.append("first-start")
         firstStartedContinuation.yield()
-        releaseFirst.wait()
+        guard releaseFirst.wait(timeout: .now() + .seconds(5)) == .success else {
+          throw QueueTestError.timedOut
+        }
         events.append("first-end")
       }
     }
@@ -57,6 +59,7 @@ struct SecurityOperationQueueTests {
 
 private enum QueueTestError: Error {
   case expected
+  case timedOut
 }
 
 private final class LockedEvents: @unchecked Sendable {
