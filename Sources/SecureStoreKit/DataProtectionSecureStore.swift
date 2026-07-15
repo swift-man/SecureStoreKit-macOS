@@ -112,7 +112,8 @@ public actor DataProtectionSecureStore: SecureStore {
     queryBuilder: SecItemQueryBuilder,
     security: any SecurityItemClient
   ) throws {
-    for attempt in 1...maximumUpsertAttempts {
+    var attempt = 1
+    while true {
       let addStatus = security.add(queryBuilder.addQuery(data: data, key: key))
       switch addStatus {
       case errSecSuccess:
@@ -126,6 +127,7 @@ public actor DataProtectionSecureStore: SecureStore {
         case errSecSuccess:
           return
         case errSecItemNotFound where attempt < maximumUpsertAttempts:
+          attempt += 1
           continue
         default:
           throw SecureStoreError.from(status: updateStatus)
@@ -134,7 +136,5 @@ public actor DataProtectionSecureStore: SecureStore {
         throw SecureStoreError.from(status: addStatus)
       }
     }
-
-    throw SecureStoreError.unexpectedStatus(errSecItemNotFound)
   }
 }
