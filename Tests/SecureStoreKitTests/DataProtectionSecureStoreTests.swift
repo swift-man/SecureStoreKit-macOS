@@ -38,6 +38,30 @@ struct DataProtectionSecureStoreTests {
     #expect(client.addCallCount == 0)
   }
 
+  @Test("SecureBytes saves through the optimized store path")
+  func saveSecureBytes() async throws {
+    let client = StubSecurityItemClient()
+    let store: any SecureStore = try makeStore(client: client)
+    let value = SecureBytes(copying: Data("secret".utf8))
+
+    try await store.save(value, for: "token")
+
+    #expect(client.addCallCount == 1)
+    #expect(client.lastAddAttributes?[kSecValueData] as? Data == Data("secret".utf8))
+  }
+
+  @Test("SecureBytes enforces the configured value size")
+  func saveOversizedSecureBytes() async throws {
+    let client = StubSecurityItemClient()
+    let store: any SecureStore = try makeStore(client: client, maximumValueSize: 4)
+    let value = SecureBytes(copying: Data(repeating: 0xA5, count: 5))
+
+    await #expect(throws: SecureStoreError.valueTooLarge(maximumBytes: 4)) {
+      try await store.save(value, for: "token")
+    }
+    #expect(client.addCallCount == 0)
+  }
+
   @Test("save updates an existing item")
   func duplicateSaveUsesUpdate() async throws {
     let client = StubSecurityItemClient()
@@ -134,6 +158,20 @@ struct DataProtectionSecureStoreTests {
     await #expect(throws: SecureStoreError.interactionRequired) {
       try await store.read(for: "token")
     }
+  }
+
+  @Test("readSecureBytes returns an owned buffer and preserves missing items")
+  func readSecureBytesResults() async throws {
+    let client = StubSecurityItemClient()
+    let store: any SecureStore = try makeStore(client: client)
+    let data = Data("secret".utf8)
+
+    client.copyResult = SecurityItemCopyResult(status: errSecSuccess, value: data as CFData)
+    let restored = try #require(try await store.readSecureBytes(for: "token"))
+    #expect(restored.withUnsafeBytes { Array($0) } == Array(data))
+
+    client.copyResult = SecurityItemCopyResult(status: errSecItemNotFound, value: nil)
+    #expect(try await store.readSecureBytes(for: "missing") == nil)
   }
 
   @Test("delete is idempotent and maps failures")

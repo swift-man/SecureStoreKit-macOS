@@ -53,6 +53,30 @@ try await store.delete(for: "github.token")
 
 Secret 실제 값은 오류, 로그, `description`에 포함하지 않습니다.
 
+### 민감한 메모리 수명 줄이기
+
+기존 `Data` API는 그대로 사용할 수 있습니다. 앱이 Keychain에서 읽은 뒤 유지하는 평문
+버퍼의 수명을 더 엄격하게 관리하려면 `SecureBytes` API를 사용합니다.
+
+```swift
+let secret = SecureBytes(copying: Data("token".utf8))
+try await store.save(secret, for: "github.token")
+
+if let restored = try await store.readSecureBytes(for: "github.token") {
+  restored.withUnsafeBytes { bytes in
+    // 포인터를 이 클로저 밖으로 내보내지 않고 필요한 작업을 수행합니다.
+  }
+}
+```
+
+`SecureBytes`는 전용 메모리를 소유하고 마지막 참조가 해제되기 직전에 `memset_s`로
+해당 버퍼를 덮어씁니다. `description`과 `debugDescription`에는 내용이 표시되지 않습니다.
+기존 `Data` 전용 `SecureStore` 구현체도 기본 호환 어댑터를 통해 새 API를 사용할 수 있습니다.
+
+이 보장은 `SecureBytes`가 소유한 버퍼에만 적용됩니다. 생성에 사용한 원본 `String`이나
+`Data`, Security.framework 및 호출자가 별도로 만든 복사본의 메모리까지 지우지는 못합니다.
+원본 값의 수명도 호출자가 가능한 짧게 관리해야 합니다.
+
 같은 access group을 사용하는 여러 프로세스가 동시에 같은 key를 저장하거나 삭제해도
 일시적인 추가·갱신 경합은 최대 3회까지 다시 시도합니다. 권한, 인증, entitlement 오류는
 재시도하지 않고 즉시 호출자에게 전달합니다.
@@ -85,3 +109,5 @@ swift test
 
 - [보안 정책](SECURITY.md)
 - [저장소 작업 규칙](AGENTS.md)
+- [변경 이력](CHANGELOG.md)
+- [현재 버전](VERSION.txt)

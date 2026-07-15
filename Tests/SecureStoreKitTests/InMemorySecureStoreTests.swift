@@ -53,4 +53,21 @@ struct InMemorySecureStoreTests {
       try await store.save(Data(repeating: 0, count: 3), for: key)
     }
   }
+
+  @Test("in-memory store snapshots SecureBytes values")
+  func secureBytesContract() async throws {
+    let store: any SecureStore = try InMemorySecureStore(initialValues: [:], maximumValueSize: 8)
+    let value = SecureBytes(copying: Data("secret".utf8))
+
+    try await store.save(value, for: "token")
+    let restored = try #require(try await store.readSecureBytes(for: "token"))
+
+    #expect(restored !== value)
+    #expect(restored.withUnsafeBytes { Array($0) } == Array("secret".utf8))
+
+    let oversized = SecureBytes(copying: Data(repeating: 0, count: 9))
+    await #expect(throws: SecureStoreError.valueTooLarge(maximumBytes: 8)) {
+      try await store.save(oversized, for: "oversized")
+    }
+  }
 }

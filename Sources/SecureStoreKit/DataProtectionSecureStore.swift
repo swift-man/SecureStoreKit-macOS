@@ -42,27 +42,33 @@ public actor DataProtectionSecureStore: SecureStore {
     let security = security
     let queryBuilder = queryBuilder
     try await operationQueue.run {
-      try Self.upsert(data, for: key, queryBuilder: queryBuilder, security: security)
+      try Self.upsert(data as NSData, for: key, queryBuilder: queryBuilder, security: security)
+    }
+  }
+
+  public func save(_ bytes: SecureBytes, for key: SecureStoreKey) async throws {
+    guard bytes.count <= configuration.maximumValueSize else {
+      throw SecureStoreError.valueTooLarge(maximumBytes: configuration.maximumValueSize)
+    }
+
+    let security = security
+    let queryBuilder = queryBuilder
+    try await operationQueue.run {
+      try Self.upsert(
+        bytes.borrowedNSData(),
+        for: key,
+        queryBuilder: queryBuilder,
+        security: security
+      )
     }
   }
 
   public func read(for key: SecureStoreKey) async throws -> Data? {
-    let security = security
-    let queryBuilder = queryBuilder
-    return try await operationQueue.run {
-      let result = security.copyMatching(queryBuilder.readQuery(key: key))
-      switch result.status {
-      case errSecSuccess:
-        guard let data = result.value as? Data else {
-          throw SecureStoreError.invalidData
-        }
-        return data
-      case errSecItemNotFound:
-        return nil
-      default:
-        throw SecureStoreError.from(status: result.status)
-      }
-    }
+    try await readValue(for: key) { $0 }
+  }
+
+  public func readSecureBytes(for key: SecureStoreKey) async throws -> SecureBytes? {
+    try await readValue(for: key) { SecureBytes(copying: $0) }
   }
 
   public func delete(for key: SecureStoreKey) async throws {
@@ -106,8 +112,30 @@ public actor DataProtectionSecureStore: SecureStore {
     }
   }
 
+  private func readValue<Value: Sendable>(
+    for key: SecureStoreKey,
+    transform: @escaping @Sendable (Data) throws -> Value
+  ) async throws -> Value? {
+    let security = security
+    let queryBuilder = queryBuilder
+    return try await operationQueue.run {
+      let result = security.copyMatching(queryBuilder.readQuery(key: key))
+      switch result.status {
+      case errSecSuccess:
+        guard let data = result.value as? Data else {
+          throw SecureStoreError.invalidData
+        }
+        return try transform(data)
+      case errSecItemNotFound:
+        return nil
+      default:
+        throw SecureStoreError.from(status: result.status)
+      }
+    }
+  }
+
   private static func upsert(
-    _ data: Data,
+    _ data: NSData,
     for key: SecureStoreKey,
     queryBuilder: SecItemQueryBuilder,
     security: any SecurityItemClient
