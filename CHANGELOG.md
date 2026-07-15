@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.2.0 - 2026-07-15
+
+### Added
+
+- Keychain에서 읽은 Secret의 애플리케이션 메모리 수명을 줄일 수 있도록 해제 직전 소유 버퍼를 덮어쓰는 `SecureBytes`를 추가했습니다.
+- 기존 `Data` 기반 구현을 깨지 않고 사용할 수 있는 `save(_:for:)` 및 `readSecureBytes(for:)` 호환 API를 추가했습니다.
+
+### Changed
+
+- Data Protection Keychain 저장 경로가 `SecureBytes`의 불변 비복사 `NSData` 뷰를 사용해 애플리케이션 내부의 불필요한 평문 복사를 줄입니다.
+- `InMemorySecureStore`도 값을 독립된 `SecureBytes` 스냅샷으로 보관해 운영 구현과 같은 소유권 계약을 따릅니다.
+
 ## 0.1.1.0 - 2026-07-15
 
 ### Fixed
